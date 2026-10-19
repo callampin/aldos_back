@@ -1,0 +1,29 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "aldos-back"
+main = "src/index.ts"
+compatibility_date = "2026-10-19"
+
+# ---------------------------------------------------------------------------
+# Variables de entorno NO sensibles.
+# Los secretos (JWT_SECRET, KHIPU_*, RESEND_API_KEY) van en `.dev.vars`
+# para desarrollo local y con `wrangler secret put` en producción.
+# ---------------------------------------------------------------------------
+[vars]
+FRONTEND_URL = "http://localhost:4321"
+STORE_WHATSAPP = "+56900000000"
+
+# ---------------------------------------------------------------------------
+# Base de datos SQLite serverless (Cloudflare D1)
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "aldos-db"
+database_id = "00000000-0000-0000-0000-000000000000" # Reemplazar por el ID real de `wrangler d1 create aldos-db`
+migrations_dir = "drizzle/migrations"
+
+# ---------------------------------------------------------------------------
+# Almacenamiento de imágenes de productos (Cloudflare R2)
+# ---------------------------------------------------------------------------
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "aldos-media"

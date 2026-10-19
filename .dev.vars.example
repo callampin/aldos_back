@@ -1,0 +1,18 @@
+# Copiar este archivo a `.dev.vars` para desarrollo local (NO se sube a git).
+# En producción estos valores se cargan con: pnpm exec wrangler secret put <NOMBRE>
+
+# Firma de los tokens JWT del panel de Estrella (usar una cadena larga y aleatoria)
+JWT_SECRET="cambiar-por-un-secreto-largo-y-aleatorio"
+
+# Credenciales de Khipu API v3
+KHIPU_API_KEY=""
+KHIPU_WEBHOOK_SECRET=""
+
+# API key de Resend para correos transaccionales
+RESEND_API_KEY=""
+
+# Número de WhatsApp de la tienda en formato internacional chileno
+STORE_WHATSAPP="+56900000000"
+
+# URL pública del frontend (para CORS y enlaces de correo)
+FRONTEND_URL="http://localhost:4321"

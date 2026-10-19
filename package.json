@@ -1,0 +1,33 @@
+{
+  "name": "aldos-back",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API RESTful serverless para la tienda de repuestos y accesorios de motocicletas (Cloudflare Workers + Hono + D1 + R2)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply aldos-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply aldos-db --remote",
+    "db:seed:generate": "node scripts/generate-seed-sql.mjs",
+    "db:seed:local": "node scripts/generate-seed-sql.mjs && wrangler d1 execute aldos-db --local --file=./drizzle/seed/0001_seed.sql"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.9.1",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.13",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.4",
+    "@cloudflare/workers-types": "^5.20261019.1",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.151.1"
+  }
+}

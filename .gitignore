@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Build / artefactos de Cloudflare
+dist/
+.wrangler/
+worker-configuration.d.ts
+
+# Variables de entorno y secretos locales (nunca se suben)
+.dev.vars
+.env
+.env.local
+*.local
+
+# Tests y cobertura
+.vitest/
+coverage/
+
+# SQL de semilla generado por `pnpm db:seed:generate` (se regenera al sembrar)
+drizzle/seed/
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.opencode/
