@@ -106,6 +106,21 @@ export interface StockAlertInput {
 /** Orden de prioridad para mostrar la línea de un producto en la tarjeta. */
 const LINE_PRIORITY: readonly MotorcycleLine[] = ['XR_CLASSIC', 'ENDURO', 'MULTI', 'CROSS'];
 
+/**
+ * Orden de prioridad de marcas para el selector "¿Qué moto tienes?" (H-13):
+ * destaca primero Honda (línea clásica XR) y las marcas principales de Enduro.
+ */
+const BRAND_PRIORITY: readonly string[] = [
+  'Honda',
+  'KTM',
+  'Yamaha',
+  'Husqvarna',
+  'Suzuki',
+  'Kawasaki',
+  'Beta',
+  'GasGas',
+];
+
 type ProductRow = {
   id: number;
   sku: string;
@@ -425,7 +440,16 @@ export async function listMotorcycleTree(db: Database): Promise<MotorcycleBrandE
     brands.set(row.brand, models);
   }
 
-  return [...brands.entries()].map(([brand, models]) => ({ brand, models }));
+  return [...brands.entries()]
+    .map(([brand, models]) => ({ brand, models }))
+    .sort((a, b) => {
+      const idxA = BRAND_PRIORITY.findIndex((p) => p.toLowerCase() === a.brand.toLowerCase());
+      const idxB = BRAND_PRIORITY.findIndex((p) => p.toLowerCase() === b.brand.toLowerCase());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.brand.localeCompare(b.brand, 'es');
+    });
 }
 
 /** Regiones y tarifas de envío activas (RF-10). */

@@ -1,7 +1,10 @@
+import { eq } from 'drizzle-orm';
 import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { verify } from 'hono/jwt';
 
+import { createDb } from '../db';
+import { admins } from '../db/schema';
 import { AppError } from './error.middleware';
 import type { Env } from '../types/bindings';
 
@@ -69,11 +72,47 @@ export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
     throw unauthorized('Tu sesión no es válida. Vuelve a ingresar.');
   }
 
-  const name = payload['name'];
+  let resolvedName = typeof payload['name'] === 'string' ? payload['name'] : '';
+  let resolvedEmail = email;
+
+  // Si el binding D1 está presente, verifica que la cuenta exista y que la contraseña
+  // no haya cambiado después de emitir el token (cierra H-12.2).
+  if (c.env?.DB) {
+    const db = createDb(c.env.DB);
+    const [admin] = await db
+      .select({
+        id: admins.id,
+        email: admins.email,
+        name: admins.name,
+        passwordHash: admins.passwordHash,
+      })
+      .from(admins)
+      .where(eq(admins.id, id))
+      .limit(1);
+
+    if (!admin) {
+      throw unauthorized('Tu sesión no es válida. Vuelve a ingresar.');
+    }
+
+    const tokenPwdFingerprint = payload['pwd'];
+    if (
+      typeof tokenPwdFingerprint === 'string' &&
+      tokenPwdFingerprint !== admin.passwordHash.slice(-16)
+    ) {
+      throw unauthorized(
+        'Tu contraseña cambió recientemente. Vuelve a ingresar con la nueva.',
+        'SESSION_EXPIRED',
+      );
+    }
+
+    resolvedName = admin.name;
+    resolvedEmail = admin.email;
+  }
+
   c.set('admin', {
     id,
-    email,
-    name: typeof name === 'string' ? name : '',
+    email: resolvedEmail,
+    name: resolvedName,
     expiresAt: Number(payload['exp'] ?? 0),
   });
 

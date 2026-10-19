@@ -126,4 +126,58 @@ describe('Middleware requireAdmin (protección del panel)', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('invalida sesiones previas cuando cambia la contraseña del administrador (H-12.2)', async () => {
+    const { env: workerEnv } = await import('cloudflare:test');
+    const { createDb } = await import('../../src/db');
+    const { admins } = await import('../../src/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    const db = createDb(workerEnv.DB);
+    const oldHash = 'pbkdf2-sha256$210000$oldSalt$oldPasswordHashFingerprint1111';
+    const newHash = 'pbkdf2-sha256$210000$newSalt$newPasswordHashFingerprint2222';
+
+    const [created] = await db
+      .insert(admins)
+      .values({
+        email: `estrella-${Date.now()}@aldosmotos.cl`,
+        name: 'Estrella',
+        passwordHash: oldHash,
+      })
+      .returning({ id: admins.id, email: admins.email });
+
+    const adminId = created!.id;
+    const now = Math.floor(Date.now() / 1000);
+    const token = await makeToken({
+      sub: adminId,
+      email: created!.email,
+      name: 'Estrella',
+      pwd: oldHash.slice(-16),
+      iat: now,
+      exp: now + 600,
+    });
+
+    const fullEnv = { ...workerEnv, JWT_SECRET } as unknown as Env;
+
+    // 1. Con la contraseña original, el token es válido
+    const okRes = await buildApp().request(
+      '/protegido',
+      { headers: { Authorization: `Bearer ${token}` } },
+      fullEnv,
+    );
+    expect(okRes.status).toBe(200);
+
+    // 2. Se cambia la contraseña en la base de datos
+    await db.update(admins).set({ passwordHash: newHash }).where(eq(admins.id, adminId));
+
+    // 3. El mismo token emitido antes del cambio ahora es rechazado con 401 SESSION_EXPIRED
+    const expiredRes = await buildApp().request(
+      '/protegido',
+      { headers: { Authorization: `Bearer ${token}` } },
+      fullEnv,
+    );
+    const body = (await expiredRes.json()) as { error: { code: string } };
+    expect(expiredRes.status).toBe(401);
+    expect(body.error.code).toBe('SESSION_EXPIRED');
+  });
 });

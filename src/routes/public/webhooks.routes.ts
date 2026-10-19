@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 
 import { createDb } from '../../db';
+import { requireAdmin, type AppEnv } from '../../middlewares/auth.middleware';
 import { KhipuNotConfiguredError, getKhipuPayment, verifyKhipuWebhookSignature } from '../../services/payment-khipu.service';
 import { markOrderPaid } from '../../services/order.service';
-import type { Env } from '../../types/bindings';
 import { runInBackground, type BackgroundContextLike } from '../../utils/background';
 
 /**
@@ -20,7 +20,7 @@ import { runInBackground, type BackgroundContextLike } from '../../utils/backgro
  * Siempre se responde `200` cuando el aviso es legítimo (aunque no haya nada que hacer),
  * porque Khipu reintenta hasta por dos días si no recibe un 200.
  */
-export const publicWebhookRoutes = new Hono<{ Bindings: Env }>();
+export const publicWebhookRoutes = new Hono<AppEnv>();
 
 interface KhipuEventPayload {
   payment_id?: unknown;
@@ -153,8 +153,9 @@ publicWebhookRoutes.post('/webhooks/khipu', async (c) => {
  *
  * Consulta el estado real del cobro en Khipu. Es la vía de reconciliación cuando el
  * webhook no llegó (por ejemplo, durante el desarrollo o si hubo un problema de red).
+ * Protegido con `requireAdmin` para que solo Estrella pueda gatillar reconciliaciones (H-17.7).
  */
-publicWebhookRoutes.get('/webhooks/khipu/status/:paymentId', async (c) => {
+publicWebhookRoutes.get('/webhooks/khipu/status/:paymentId', requireAdmin, async (c) => {
   const paymentId = c.req.param('paymentId');
   const db = createDb(c.env.DB);
 

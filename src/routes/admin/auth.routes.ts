@@ -86,7 +86,14 @@ adminAuthRoutes.post(
     const now = Math.floor(Date.now() / 1000);
     const expiresAt = now + SESSION_TTL_SECONDS;
     const token = await sign(
-      { sub: admin.id, email: admin.email, name: admin.name, iat: now, exp: expiresAt },
+      {
+        sub: admin.id,
+        email: admin.email,
+        name: admin.name,
+        pwd: admin.passwordHash.slice(-16),
+        iat: now,
+        exp: expiresAt,
+      },
       c.env.JWT_SECRET,
     );
 
